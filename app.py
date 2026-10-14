@@ -368,43 +368,81 @@ def convert_pdf_to_word_ocr(pdf_path, output_docx_path, ocr_lang='ind+eng'):
     # Post-processing font Arial, simbol panah presisi, dan metadata aipp_project
     post_process_docx_document(output_docx_path, target_font='Arial')
 
-# ==============================================================================
-# METODE KONVERSI WORD -> PDF
-# ==============================================================================
+_word_conversion_lock = threading.Lock()
+
 def convert_word_to_pdf_engine(docx_path, output_pdf_path):
     """
     Mengonversi dokumen Word ke PDF dengan pendekatan multi-engine:
-    1. Mencoba `docx2pdf` (sangat optimal jika di Windows dengan MS Word)
-    2. Fallback ke LibreOffice Headless (berfungsi di Windows/Linux/macOS)
+    1. Microsoft Word COM Automation Native (DispatchEx, Visible=False, DisplayAlerts=0, thread-safe lock)
+    2. Fallback docx2pdf
+    3. Fallback LibreOffice Headless (berfungsi di Windows/Linux/macOS)
     """
     error_log = []
 
-    # Opsi 1: Coba docx2pdf (MS Word via Windows COM)
-    try:
-        # Flask menjalankan request di thread terpisah, sehingga CoInitialize diperlukan
-        has_pythoncom = False
+    # Opsi 1: Microsoft Word COM Automation Native (DispatchEx selalu membuat instans bersih)
+    if sys.platform.startswith('win'):
         try:
             import pythoncom
-            pythoncom.CoInitialize()
-            has_pythoncom = True
-        except ImportError:
-            pass
+            import win32com.client
 
-        try:
-            from docx2pdf import convert
             abs_docx = str(Path(docx_path).resolve())
             abs_pdf = str(Path(output_pdf_path).resolve())
-            convert(abs_docx, abs_pdf)
-            if os.path.exists(abs_pdf) and os.path.getsize(abs_pdf) > 0:
-                return True, "docx2pdf (MS Word)"
-        finally:
-            if has_pythoncom:
+
+            with _word_conversion_lock:
+                pythoncom.CoInitialize()
+                word = None
+                doc = None
                 try:
-                    pythoncom.CoUninitialize()
-                except Exception:
-                    pass
+                    try:
+                        word = win32com.client.DispatchEx("Word.Application")
+                    except Exception:
+                        word = win32com.client.Dispatch("Word.Application")
+
+                    word.Visible = False
+                    word.DisplayAlerts = 0  # wdAlertsNone = 0
+
+                    doc = word.Documents.Open(
+                        FileName=abs_docx,
+                        ConfirmConversions=False,
+                        ReadOnly=True,
+                        AddToRecentFiles=False
+                    )
+
+                    # wdFormatPDF = 17
+                    doc.SaveAs(FileName=abs_pdf, FileFormat=17)
+
+                    if os.path.exists(abs_pdf) and os.path.getsize(abs_pdf) > 0:
+                        return True, "Microsoft Word (COM)"
+                finally:
+                    if doc is not None:
+                        try:
+                            doc.Close(0)  # wdDoNotSaveChanges = 0
+                        except Exception:
+                            pass
+                        del doc
+                    if word is not None:
+                        try:
+                            word.Quit(0)
+                        except Exception:
+                            pass
+                        del word
+                    try:
+                        pythoncom.CoUninitialize()
+                    except Exception:
+                        pass
+        except Exception as e:
+            error_log.append(f"MS Word COM: {str(e)}")
+
+    # Opsi 2: docx2pdf fallback
+    try:
+        from docx2pdf import convert
+        abs_docx = str(Path(docx_path).resolve())
+        abs_pdf = str(Path(output_pdf_path).resolve())
+        convert(abs_docx, abs_pdf)
+        if os.path.exists(abs_pdf) and os.path.getsize(abs_pdf) > 0:
+            return True, "docx2pdf"
     except Exception as e:
-        error_log.append(f"docx2pdf failed: {str(e)}")
+        error_log.append(f"docx2pdf: {str(e)}")
 
     # Opsi 2: Fallback ke LibreOffice / soffice
     libreoffice_bins = ['soffice', 'libreoffice', r"C:\Program Files\LibreOffice\program\soffice.exe"]
