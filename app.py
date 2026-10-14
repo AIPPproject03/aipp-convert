@@ -676,18 +676,36 @@ def download_zip(session_id):
     if not session_dir.exists():
         return jsonify({'error': 'Tidak ada berkas yang siap diunduh dalam sesi ini.'}), 404
 
-    files_to_zip = [f for f in session_dir.iterdir() if f.is_file() and f.name != '.gitkeep']
+    # Gunakan path absolute yang terverifikasi dan resolve dulu agar tidak ada path junction/deleted
+    files_to_zip = []
+    try:
+        for f in session_dir.iterdir():
+            if f.is_file() and f.name != '.gitkeep':
+                try:
+                    resolved = f.resolve(strict=True)  # strict=True: error jika path tidak ada fisiknya
+                    files_to_zip.append((resolved, f.name))
+                except (OSError, FileNotFoundError):
+                    print(f"[ZIP Skip] File tidak ditemukan atau tidak valid: {f.name}")
+    except Exception as e:
+        print(f"[ZIP Error] Gagal membaca direktori sesi: {e}")
+        return jsonify({'error': 'Gagal membaca direktori sesi.'}), 500
+
     if not files_to_zip:
-        return jsonify({'error': 'Belum ada berkas hasil konversi.'}), 404
+        return jsonify({'error': 'Belum ada berkas hasil konversi yang dapat dipaketkan.'}), 404
 
     zip_buffer = io.BytesIO()
+    packed = 0
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        for file_path in files_to_zip:
-            if file_path.exists():
-                try:
-                    zip_file.write(str(file_path.resolve()), arcname=file_path.name)
-                except Exception as e:
-                    print(f"[ZIP Warning] Dilewati {file_path.name}: {e}")
+        for resolved_path, arcname in files_to_zip:
+            try:
+                if resolved_path.exists() and resolved_path.stat().st_size > 0:
+                    zip_file.write(str(resolved_path), arcname=arcname)
+                    packed += 1
+            except Exception as e:
+                print(f"[ZIP Warning] Gagal menambahkan {arcname}: {e}")
+
+    if packed == 0:
+        return jsonify({'error': 'Tidak ada berkas valid yang dapat dipaketkan ke ZIP.'}), 404
 
     zip_buffer.seek(0)
     return send_file(

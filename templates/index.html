@@ -90,7 +90,7 @@
                             class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">AUTO-PURGE</span>
                     </div>
                     <p class="text-[10px] sm:text-[11px] text-slate-500 hidden sm:block">Konversi Batch Mandiri (Maks.
-                        20 Berkas) • Nama Asli Terjaga</p>
+                        30 Berkas) • Nama Asli Terjaga</p>
                 </div>
             </div>
 
@@ -120,7 +120,7 @@
                 Konversi Dokumen Mandiri & Cepat
             </h1>
             <p class="text-xs sm:text-sm text-slate-600 mt-1 max-w-lg mx-auto">
-                Mendukung hingga <strong>20 berkas sekaligus</strong>. Nama berkas tetap sama persis dan otomatis
+                Mendukung hingga <strong>30 berkas sekaligus</strong>. Nama berkas tetap sama persis dan otomatis
                 dibersihkan permanen saat web direfresh.
             </p>
         </div>
@@ -187,7 +187,7 @@
                             Seret & Lepas Berkas PDF ke Sini
                         </p>
                         <p class="text-xs text-slate-500 mt-1">
-                            Atau klik untuk memilih berkas dari File Manager (Maks. 20 berkas sekaligus)
+                            Atau klik untuk memilih berkas dari File Manager (Maks. 30 berkas sekaligus)
                         </p>
                         <div
                             class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
@@ -230,7 +230,7 @@
                             Seret & Lepas Berkas Word ke Sini
                         </p>
                         <p class="text-xs text-slate-500 mt-1">
-                            Mendukung berkas .docx dan .doc (Maks. 20 berkas sekaligus)
+                            Mendukung berkas .docx dan .doc (Maks. 30 berkas sekaligus)
                         </p>
                         <div
                             class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
@@ -248,7 +248,7 @@
                     <div class="flex items-center gap-2">
                         <span class="font-bold text-slate-800">Daftar Berkas Siap Konversi:</span>
                         <span id="queueCountBadge"
-                            class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800">0 / 20
+                            class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800">0 / 30
                             Berkas</span>
                     </div>
                     <button id="btnClearAllQueue"
@@ -316,11 +316,11 @@
                         </div>
 
                         <!-- Master ZIP Download Button -->
-                        <a id="btnDownloadZip" href="#"
-                            class="px-3.5 py-2 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5">
+                        <button id="btnDownloadZip" type="button"
+                            class="px-3.5 py-2 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5">
                             <i data-lucide="archive" class="w-4 h-4"></i>
-                            <span>Unduh Semua (.ZIP)</span>
-                        </a>
+                            <span id="btnDownloadZipText">Unduh Semua (.ZIP)</span>
+                        </button>
                     </div>
 
                     <!-- Converted Items List -->
@@ -374,7 +374,7 @@
                     <i data-lucide="files" class="w-4 h-4"></i>
                 </div>
                 <div>
-                    <h5 class="text-xs font-bold text-slate-800">Batch Hingga 20 Berkas</h5>
+                    <h5 class="text-xs font-bold text-slate-800">Batch Hingga 30 Berkas</h5>
                     <p class="text-[11px] text-slate-500">Proses sekali jalan & unduh ZIP.</p>
                 </div>
             </div>
@@ -473,9 +473,9 @@
         // STATE MANAGEMENT
         // =====================================================================
         let currentMode = 'pdf-to-word'; // 'pdf-to-word' | 'word-to-pdf'
-        let queuedFiles = []; // Array of File objects (max 20)
+        let queuedFiles = []; // Array of File objects (max 30)
         let isProcessing = false;
-        const MAX_FILES = 20;
+        const MAX_FILES = 30;
 
         // DOM Elements
         const tabPdfToWord = document.getElementById('tabPdfToWord');
@@ -804,7 +804,7 @@
             }
 
             resultSummaryText.textContent = `${results.length} dari ${totalQueued} berkas berhasil dikonversi dengan nama asli.`;
-            btnDownloadZip.href = `/api/download-zip/${currentSessionId}`;
+            btnDownloadZip.dataset.sessionId = currentSessionId;
 
             resultItemsList.innerHTML = results.map(item => `
                 <div class="p-2.5 bg-white border border-emerald-200 rounded-xl flex items-center justify-between gap-3 text-xs">
@@ -834,6 +834,42 @@
         btnConvertMore.addEventListener('click', () => {
             clearQueue();
             hideResult();
+        });
+
+        // =====================================================================
+        // ZIP DOWNLOAD VIA FETCH (AGAR TIDAK MEMICU BEFOREUNLOAD)
+        // =====================================================================
+        btnDownloadZip.addEventListener('click', async () => {
+            const sessionId = btnDownloadZip.dataset.sessionId;
+            if (!sessionId) return;
+
+            const btnText = document.getElementById('btnDownloadZipText');
+            btnDownloadZip.disabled = true;
+            btnText.textContent = 'Menyiapkan ZIP...';
+
+            try {
+                const res = await fetch(`/api/download-zip/${sessionId}`);
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || `Gagal mengunduh ZIP (${res.status})`);
+                }
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'aipp_convert_hasil.zip';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                }, 1000);
+            } catch (err) {
+                showError('Gagal mengunduh ZIP: ' + err.message);
+            } finally {
+                btnDownloadZip.disabled = false;
+                btnText.textContent = 'Unduh Semua (.ZIP)';
+            }
         });
 
         // =====================================================================
