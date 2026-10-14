@@ -4,6 +4,8 @@ import time
 import shutil
 import uuid
 import threading
+import io
+import zipfile
 import subprocess
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -144,38 +146,45 @@ def check_system_capabilities():
 def allowed_file(filename, allowed_set):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_set
 
-def generate_unique_filename(original_filename, target_extension):
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    unique_id = uuid.uuid4().hex[:6]
+def generate_clean_filename(original_filename, target_extension):
+    """
+    Menghasilkan nama berkas yang SAMA PERSIS dengan berkas aslinya
+    tanpa penomoran acak, timestamp, atau hash, hanya mengganti ekstensinya.
+    """
     base_name = Path(original_filename).stem
-    safe_base = "".join(c for c in base_name if c.isalnum() or c in (' ', '_', '-')).rstrip()
-    if not safe_base:
-        safe_base = "dokumen"
-    return f"{safe_base}_{timestamp}_{unique_id}.{target_extension}"
+    # Hapus karakter terlarang sistem file Windows/Linux: / \ : * ? " < > |
+    invalid_chars = r'/\:*?"<>|'
+    clean_base = "".join(c for c in base_name if c not in invalid_chars).strip()
+    if not clean_base:
+        clean_base = "dokumen"
+    return f"{clean_base}.{target_extension}"
 
 # ==============================================================================
-# LOGIKA PEMBERSIHAN BERKAS OTOMATIS (BACKGROUND THREAD)
+# LOGIKA PEMBERSIHAN BERKAS OTOMATIS (BACKGROUND THREAD & SESSION PURGE)
 # ==============================================================================
-def background_cleanup_job(max_age_seconds=3600, interval_seconds=900):
+def background_cleanup_job(max_age_seconds=1800, interval_seconds=300):
     """
-    Menghapus berkas sementara yang berumur lebih dari 1 jam (3600 detik).
-    Dijalankan secara berkala di latar belakang setiap 15 menit.
+    Menghapus berkas sementara dan folder sesi yang berumur lebih dari 30 menit.
+    Dijalankan secara berkala di latar belakang setiap 5 menit.
     """
     while True:
         try:
             now = time.time()
-            for folder in [UPLOAD_FOLDER, CONVERTED_FOLDER]:
-                for item in folder.glob('*'):
-                    if item.is_file():
-                        file_age = now - item.stat().st_mtime
-                        if file_age > max_age_seconds:
-                            try:
-                                item.unlink()
-                                print(f"[Cleanup] Menghapus berkas kedaluwarsa: {item.name}")
-                            except Exception as e:
-                                print(f"[Cleanup Error] Gagal menghapus {item.name}: {e}")
-        except Exception as e:
-            print(f"[Cleanup Background Exception]: {e}")
+            for base_dir in [UPLOAD_FOLDER, CONVERTED_FOLDER]:
+                for item in base_dir.iterdir():
+                    if item.name == '.gitkeep':
+                        continue
+                    try:
+                        item_age = now - item.stat().st_mtime
+                        if item_age > max_age_seconds:
+                            if item.is_dir():
+                                shutil.rmtree(str(item), ignore_errors=True)
+                            else:
+                                item.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
         time.sleep(interval_seconds)
 
 # Jalankan daemon thread untuk pembersihan berkas
@@ -490,7 +499,7 @@ def system_status():
 
 @app.route('/api/convert/pdf-to-word', methods=['POST'])
 def api_pdf_to_word():
-    """Endpoint konversi PDF ke Word dengan deteksi otomatis atau mode OCR manual."""
+    """Endpoint konversi PDF ke Word dengan nama berkas bersih tanpa embel-embel nomor/timestamp."""
     if 'file' not in request.files:
         return jsonify({'success': False, 'message': 'Tidak ada berkas yang diunggah.'}), 400
 
@@ -501,17 +510,24 @@ def api_pdf_to_word():
     if not allowed_file(file.filename, ALLOWED_EXTENSIONS_PDF):
         return jsonify({'success': False, 'message': 'Format berkas tidak didukung. Mohon unggah berkas .pdf.'}), 400
 
+    session_id = secure_filename(request.form.get('session_id', '')) or 'default'
     force_ocr = request.form.get('force_ocr', 'false').lower() == 'true'
     ocr_lang = request.form.get('ocr_lang', 'ind+eng')
 
-    # Buat nama berkas unik
-    original_name = secure_filename(file.filename) or "dokumen.pdf"
-    input_filename = f"input_{uuid.uuid4().hex[:8]}_{original_name}"
-    input_path = UPLOAD_FOLDER / input_filename
+    # Buat direktori isolasi sesi
+    session_upload_dir = UPLOAD_FOLDER / session_id
+    session_converted_dir = CONVERTED_FOLDER / session_id
+    session_upload_dir.mkdir(parents=True, exist_ok=True)
+    session_converted_dir.mkdir(parents=True, exist_ok=True)
+
+    original_name = file.filename
+    temp_input_name = f"temp_{uuid.uuid4().hex[:6]}_{secure_filename(original_name)}"
+    input_path = session_upload_dir / temp_input_name
     file.save(str(input_path))
 
-    output_filename = generate_unique_filename(original_name, 'docx')
-    output_path = CONVERTED_FOLDER / output_filename
+    # Nama berkas hasil konversi SAMA PERSIS dengan aslinya (hanya ekstensi .docx)
+    output_filename = generate_clean_filename(original_name, 'docx')
+    output_path = session_converted_dir / output_filename
 
     try:
         is_text_based, char_count, total_pages = detect_pdf_type(input_path)
@@ -519,32 +535,22 @@ def api_pdf_to_word():
         detection_label = "Teks Terstruktur" if is_text_based else "Gambar / Scan"
 
         if force_ocr or not is_text_based:
-            # Mode OCR
             method_used = "OCR (Tesseract)"
             try:
                 convert_pdf_to_word_ocr(input_path, output_path, ocr_lang=ocr_lang)
             except Exception as ocr_err:
-                # Jika OCR gagal karena Tesseract / Poppler belum disiapkan, berikan pesan panduan
                 err_msg = str(ocr_err)
                 if "tesseract is not installed" in err_msg.lower() or "tesseract" in err_msg.lower():
-                    raise RuntimeError(
-                        "Tesseract OCR belum terpasang atau belum terbaca di PATH sistem. "
-                        "Silakan pasang Tesseract-OCR di server/komputer Anda."
-                    )
+                    raise RuntimeError("Tesseract OCR belum terpasang atau belum terbaca di PATH sistem.")
                 elif "poppler" in err_msg.lower() or "unable to get page count" in err_msg.lower():
-                    raise RuntimeError(
-                        "Poppler belum terpasang atau jalurnya belum terkonfigurasi. "
-                        "Poppler diperlukan untuk merender halaman PDF ke gambar sebelum OCR."
-                    )
+                    raise RuntimeError("Poppler belum terpasang atau jalurnya belum terkonfigurasi.")
                 else:
                     raise ocr_err
         else:
-            # Mode Tata Letak Asli (pdf2docx)
             method_used = "Ekstraksi Layout Asli (pdf2docx)"
             try:
                 convert_pdf_to_word_layout(input_path, output_path)
             except Exception as layout_err:
-                # Jika layout gagal, coba fallback ke OCR jika dimungkinkan
                 print(f"[Layout Fail -> Fallback OCR]: {layout_err}")
                 try:
                     convert_pdf_to_word_ocr(input_path, output_path, ocr_lang=ocr_lang)
@@ -558,7 +564,7 @@ def api_pdf_to_word():
         return jsonify({
             'success': True,
             'message': 'Konversi PDF ke Word berhasil!',
-            'download_url': f'/api/download/converted/{output_filename}',
+            'download_url': f'/api/download/{session_id}/{output_filename}',
             'filename': output_filename,
             'original_filename': original_name,
             'method_used': method_used,
@@ -575,7 +581,6 @@ def api_pdf_to_word():
         }), 500
 
     finally:
-        # Hapus berkas upload input sementara untuk efisiensi penyimpanan
         if input_path.exists():
             try:
                 input_path.unlink()
@@ -584,7 +589,7 @@ def api_pdf_to_word():
 
 @app.route('/api/convert/word-to-pdf', methods=['POST'])
 def api_word_to_pdf():
-    """Endpoint konversi Word (.docx / .doc) ke PDF."""
+    """Endpoint konversi Word (.docx / .doc) ke PDF dengan nama berkas bersih."""
     if 'file' not in request.files:
         return jsonify({'success': False, 'message': 'Tidak ada berkas yang diunggah.'}), 400
 
@@ -595,13 +600,21 @@ def api_word_to_pdf():
     if not allowed_file(file.filename, ALLOWED_EXTENSIONS_WORD):
         return jsonify({'success': False, 'message': 'Format berkas tidak didukung. Unggah berkas .docx atau .doc.'}), 400
 
-    original_name = secure_filename(file.filename) or "dokumen.docx"
-    input_filename = f"input_{uuid.uuid4().hex[:8]}_{original_name}"
-    input_path = UPLOAD_FOLDER / input_filename
+    session_id = secure_filename(request.form.get('session_id', '')) or 'default'
+
+    session_upload_dir = UPLOAD_FOLDER / session_id
+    session_converted_dir = CONVERTED_FOLDER / session_id
+    session_upload_dir.mkdir(parents=True, exist_ok=True)
+    session_converted_dir.mkdir(parents=True, exist_ok=True)
+
+    original_name = file.filename
+    temp_input_name = f"temp_{uuid.uuid4().hex[:6]}_{secure_filename(original_name)}"
+    input_path = session_upload_dir / temp_input_name
     file.save(str(input_path))
 
-    output_filename = generate_unique_filename(original_name, 'pdf')
-    output_path = CONVERTED_FOLDER / output_filename
+    # Nama berkas hasil konversi SAMA PERSIS dengan aslinya (hanya ekstensi .pdf)
+    output_filename = generate_clean_filename(original_name, 'pdf')
+    output_path = session_converted_dir / output_filename
 
     try:
         success, engine_name = convert_word_to_pdf_engine(input_path, output_path)
@@ -612,7 +625,7 @@ def api_word_to_pdf():
         return jsonify({
             'success': True,
             'message': 'Konversi Word ke PDF berhasil!',
-            'download_url': f'/api/download/converted/{output_filename}',
+            'download_url': f'/api/download/{session_id}/{output_filename}',
             'filename': output_filename,
             'original_filename': original_name,
             'method_used': f"Engine {engine_name}",
@@ -627,21 +640,23 @@ def api_word_to_pdf():
         }), 500
 
     finally:
-        # Hapus berkas upload input sementara
         if input_path.exists():
             try:
                 input_path.unlink()
             except Exception:
                 pass
 
-@app.route('/api/download/<folder_type>/<filename>', methods=['GET'])
-def download_file(folder_type, filename):
-    """Endpoint pengunduhan berkas hasil konversi."""
-    safe_filename = secure_filename(filename)
-    if folder_type == 'converted':
-        target_path = CONVERTED_FOLDER / safe_filename
+@app.route('/api/download/<session_or_folder>/<filename>', methods=['GET'])
+def download_file(session_or_folder, filename):
+    """Endpoint pengunduhan berkas hasil konversi (mendukung session folder & root)."""
+    clean_filename = filename.replace('..', '').strip('/\\')
+    if session_or_folder == 'converted':
+        target_path = CONVERTED_FOLDER / clean_filename
     else:
-        target_path = UPLOAD_FOLDER / safe_filename
+        safe_session = secure_filename(session_or_folder)
+        target_path = CONVERTED_FOLDER / safe_session / clean_filename
+        if not target_path.exists():
+            target_path = CONVERTED_FOLDER / clean_filename
 
     if not target_path.exists():
         return jsonify({'error': 'Berkas tidak ditemukan atau telah dibersihkan otomatis.'}), 404
@@ -649,8 +664,74 @@ def download_file(folder_type, filename):
     return send_file(
         str(target_path),
         as_attachment=True,
-        download_name=safe_filename
+        download_name=clean_filename
     )
+
+@app.route('/api/download-zip/<session_id>', methods=['GET'])
+def download_zip(session_id):
+    """Mengemas seluruh berkas hasil konversi dalam sesi ke dalam 1 arsip ZIP."""
+    safe_session = secure_filename(session_id)
+    session_dir = CONVERTED_FOLDER / safe_session
+
+    if not session_dir.exists():
+        return jsonify({'error': 'Tidak ada berkas yang siap diunduh dalam sesi ini.'}), 404
+
+    files_to_zip = [f for f in session_dir.iterdir() if f.is_file() and f.name != '.gitkeep']
+    if not files_to_zip:
+        return jsonify({'error': 'Belum ada berkas hasil konversi.'}), 404
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for file_path in files_to_zip:
+            if file_path.exists():
+                try:
+                    zip_file.write(str(file_path.resolve()), arcname=file_path.name)
+                except Exception as e:
+                    print(f"[ZIP Warning] Dilewati {file_path.name}: {e}")
+
+    zip_buffer.seek(0)
+    return send_file(
+        zip_buffer,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name='aipp_convert_hasil.zip'
+    )
+
+@app.route('/api/cleanup-session', methods=['POST'])
+def cleanup_session():
+    """Menghapus seluruh berkas hasil konversi sesi secara permanen saat refresh/tutup tab."""
+    session_id = secure_filename(request.form.get('session_id', ''))
+    if not session_id and request.is_json:
+        session_id = secure_filename(request.json.get('session_id', ''))
+
+    if session_id and session_id != 'converted':
+        shutil.rmtree(str(UPLOAD_FOLDER / session_id), ignore_errors=True)
+        shutil.rmtree(str(CONVERTED_FOLDER / session_id), ignore_errors=True)
+        print(f"[Session Purged] Berkas sesi {session_id} berhasil dihapus permanen.")
+
+    return jsonify({'success': True, 'message': 'Penyimpanan sesi berhasil dibersihkan.'})
+
+@app.route('/api/cleanup-all', methods=['POST'])
+def cleanup_all():
+    """Mengosongkan seluruh isi folder uploads dan converted seketika."""
+    count_deleted = 0
+    for base_dir in [UPLOAD_FOLDER, CONVERTED_FOLDER]:
+        for item in base_dir.iterdir():
+            if item.name == '.gitkeep':
+                continue
+            try:
+                if item.is_dir():
+                    shutil.rmtree(str(item), ignore_errors=True)
+                else:
+                    item.unlink(missing_ok=True)
+                count_deleted += 1
+            except Exception:
+                pass
+
+    return jsonify({
+        'success': True,
+        'message': f'Penyimpanan lokal berhasil dibersihkan total ({count_deleted} item dihapus).'
+    })
 
 # ==============================================================================
 # JALANKAN SERVER

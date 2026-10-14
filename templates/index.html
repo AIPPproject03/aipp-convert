@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="id" class="h-full bg-slate-50">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>aipp-convert | Konversi Dokumen Mandiri & OCR</title>
-    <meta name="description" content="Aplikasi konversi dokumen mandiri unlimited: PDF ke Word (Teks & OCR Scan) dan Word ke PDF dengan privasi penuh.">
-    
+    <title>aipp-convert | Konversi Dokumen Mandiri & Batch OCR</title>
+    <meta name="description"
+        content="Konversi dokumen mandiri privat tanpa batas: PDF ke Word & Word ke PDF. Batch hingga 20 berkas, drag & drop, dan pembersihan otomatis saat refresh.">
+
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -28,19 +31,11 @@
                             500: '#0284c7',
                             600: '#0369a1',
                             700: '#075985',
-                        },
-                        brand: {
-                            blue: '#2563eb',
-                            indigo: '#4f46e5',
-                            emerald: '#059669',
-                            amber: '#d97706',
-                            rose: '#e11d48',
                         }
                     },
                     boxShadow: {
                         'soft': '0 8px 30px rgba(0,0,0,0.06)',
                         'card': '0 12px 36px -4px rgba(16, 24, 40, 0.08), 0 4px 12px -2px rgba(16, 24, 40, 0.03)',
-                        'glow': '0 0 25px -5px rgba(37, 99, 235, 0.35)',
                     }
                 }
             }
@@ -51,108 +46,124 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* Smooth transitions & touch optimizations */
         * {
             -webkit-tap-highlight-color: transparent;
         }
+
         .drag-active {
             border-color: #2563eb !important;
             background-color: #eff6ff !important;
             transform: scale(1.01);
         }
-        @keyframes pulse-subtle {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.65; }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
         }
-        .animate-subtle {
-            animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
         }
     </style>
 </head>
+
 <body class="h-full flex flex-col font-sans text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-900">
 
     <!-- Top Header Navigation -->
     <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
-        <div class="max-w-4xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
+        <div class="max-w-4xl mx-auto px-4 py-3 sm:py-3.5 flex items-center justify-between gap-2">
             <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                <div
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
                     <i data-lucide="layers" class="w-5 h-5"></i>
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">aipp-convert</span>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">PRIVAT</span>
+                        <span
+                            class="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">aipp-convert</span>
+                        <span
+                            class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">AUTO-PURGE</span>
                     </div>
-                    <p class="text-[11px] text-slate-500 hidden sm:block">Unlimited Personal Document Converter & OCR</p>
+                    <p class="text-[10px] sm:text-[11px] text-slate-500 hidden sm:block">Konversi Batch Mandiri (Maks.
+                        20 Berkas) • Nama Asli Terjaga</p>
                 </div>
             </div>
 
-            <!-- Health Status / Info Button -->
-            <button id="btnOpenSystemInfo" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-all">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Status Sistem</span>
-                <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-400"></i>
-            </button>
+            <!-- Actions: Clean Memory Button & System Status -->
+            <div class="flex items-center gap-2">
+                <button id="btnPurgeStorage" title="Kosongkan memori penyimpanan lokal seketika"
+                    class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 transition-all">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Bersihkan Memori</span>
+                </button>
+                <button id="btnOpenSystemInfo"
+                    class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-all">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="hidden sm:inline">Status</span>
+                    <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-400"></i>
+                </button>
+            </div>
         </div>
     </header>
 
     <!-- Main Content Container -->
-    <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-5 sm:py-8 flex flex-col justify-start">
-        
+    <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-5 sm:py-7 flex flex-col justify-start">
+
         <!-- Hero Introduction (Mobile Friendly) -->
-        <div class="text-center mb-6 sm:mb-8">
+        <div class="text-center mb-5 sm:mb-7">
             <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
                 Konversi Dokumen Mandiri & Cepat
             </h1>
-            <p class="text-xs sm:text-sm text-slate-600 mt-1.5 max-w-md mx-auto">
-                Tanpa batas file, tanpa kuota harian. Mendukung PDF teks rapi & dokumen hasil pindaian (OCR).
+            <p class="text-xs sm:text-sm text-slate-600 mt-1 max-w-lg mx-auto">
+                Mendukung hingga <strong>20 berkas sekaligus</strong>. Nama berkas tetap sama persis dan otomatis
+                dibersihkan permanen saat web direfresh.
             </p>
         </div>
 
         <!-- Conversion Card Box -->
-        <div class="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-card p-4 sm:p-7 transition-all">
-            
+        <div
+            class="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-card p-4 sm:p-7 transition-all">
+
             <!-- Navigation Tabs (Mobile-First Pill Switcher) -->
-            <div class="grid grid-cols-2 p-1.5 bg-slate-100/90 rounded-xl sm:rounded-2xl gap-1 mb-6">
-                <button id="tabPdfToWord" class="tab-btn flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 bg-white text-blue-600 shadow-sm">
+            <div class="grid grid-cols-2 p-1.5 bg-slate-100/90 rounded-xl sm:rounded-2xl gap-1 mb-5">
+                <button id="tabPdfToWord"
+                    class="tab-btn flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 bg-white text-blue-600 shadow-sm">
                     <i data-lucide="file-text" class="w-4 h-4"></i>
-                    <span>PDF ke Word</span>
+                    <span>PDF ke Word (.docx)</span>
                 </button>
-                <button id="tabWordToPdf" class="tab-btn flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 text-slate-600 hover:text-slate-900">
+                <button id="tabWordToPdf"
+                    class="tab-btn flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 text-slate-600 hover:text-slate-900">
                     <i data-lucide="file-check" class="w-4 h-4"></i>
-                    <span>Word ke PDF</span>
+                    <span>Word ke PDF (.pdf)</span>
                 </button>
             </div>
 
             <!-- TAB 1: PDF to Word Section -->
-            <div id="sectionPdfToWord" class="space-y-5">
-                
-                <!-- OCR Mode Toggle & Options (Accordion/Card) -->
-                <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3.5 sm:p-4 text-xs sm:text-sm">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex items-start gap-2.5">
-                            <div class="mt-0.5 p-1.5 rounded-lg bg-blue-100 text-blue-700">
-                                <i data-lucide="scan-line" class="w-4 h-4"></i>
-                            </div>
-                            <div>
-                                <span class="font-bold text-slate-900 block">Deteksi Otomatis & OCR Cerdas</span>
-                                <p class="text-slate-600 text-[11px] sm:text-xs mt-0.5">
-                                    Sistem secara otomatis mendeteksi apakah PDF berbasis teks murni (tata letak rapi) atau pindaian gambar (OCR).
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+            <div id="sectionPdfToWord" class="space-y-4">
 
-                    <!-- Force OCR Checkbox & Lang Selector -->
-                    <div class="mt-3 pt-3 border-t border-blue-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <!-- OCR Mode Toggle & Options -->
+                <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 sm:p-3.5 text-xs sm:text-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                         <label class="flex items-center gap-2 cursor-pointer select-none">
-                            <input type="checkbox" id="checkForceOcr" class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
-                            <span class="text-xs font-semibold text-slate-700">Paksa Mode OCR (Scan/Foto)</span>
+                            <input type="checkbox" id="checkForceOcr"
+                                class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+                            <div>
+                                <span class="text-xs font-bold text-slate-800 block">Paksa Mode OCR (Scan/Foto)</span>
+                                <span class="text-[11px] text-slate-500 block">Aktifkan hanya jika PDF berupa pindaian
+                                    gambar tanpa lapisan teks.</span>
+                            </div>
                         </label>
-                        
-                        <div class="flex items-center gap-2">
-                            <label for="selectOcrLang" class="text-[11px] font-medium text-slate-500">Bahasa OCR:</label>
-                            <select id="selectOcrLang" class="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+
+                        <div class="flex items-center gap-2 shrink-0">
+                            <label for="selectOcrLang" class="text-[11px] font-medium text-slate-500">Bahasa
+                                OCR:</label>
+                            <select id="selectOcrLang"
+                                class="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                                 <option value="ind+eng" selected>Indonesia + English</option>
                                 <option value="ind">Bahasa Indonesia</option>
                                 <option value="eng">English</option>
@@ -162,22 +173,26 @@
                 </div>
 
                 <!-- Dropzone Uploader for PDF -->
-                <div id="dropzonePdf" class="border-2 border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/30 transition-all rounded-2xl p-6 sm:p-8 text-center cursor-pointer relative group">
-                    <input type="file" id="inputPdfFile" accept=".pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                    
+                <div id="dropzonePdf"
+                    class="border-2 border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/20 transition-all rounded-2xl p-6 sm:p-8 text-center cursor-pointer relative group">
+                    <input type="file" id="inputPdfFile" accept=".pdf" multiple
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+
                     <div class="flex flex-col items-center justify-center pointer-events-none">
-                        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 mb-3 group-hover:scale-105 transition-transform">
+                        <div
+                            class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 mb-3 group-hover:scale-105 transition-transform">
                             <i data-lucide="file-up" class="w-7 h-7 sm:w-8 sm:h-8"></i>
                         </div>
                         <p class="font-bold text-sm sm:text-base text-slate-800">
-                            Sentuh untuk Memilih Berkas PDF
+                            Seret & Lepas Berkas PDF ke Sini
                         </p>
                         <p class="text-xs text-slate-500 mt-1">
-                            Atau seret & lepas berkas di sini (Maks. 200 MB)
+                            Atau klik untuk memilih berkas dari File Manager (Maks. 20 berkas sekaligus)
                         </p>
-                        <div class="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
-                            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
-                            <span>Diproses lokal & terjaga kerahasiaannya</span>
+                        <div
+                            class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-blue-600"></i>
+                            <span>Nama berkas tetap sama persis tanpa penomoran acak</span>
                         </div>
                     </div>
                 </div>
@@ -185,146 +200,157 @@
             </div>
 
             <!-- TAB 2: Word to PDF Section -->
-            <div id="sectionWordToPdf" class="space-y-5 hidden">
-                <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3.5 sm:p-4 text-xs sm:text-sm">
+            <div id="sectionWordToPdf" class="space-y-4 hidden">
+                <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 sm:p-3.5 text-xs sm:text-sm">
                     <div class="flex items-start gap-2.5">
-                        <div class="mt-0.5 p-1.5 rounded-lg bg-indigo-100 text-indigo-700">
-                            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                        <div class="mt-0.5 p-1 rounded bg-indigo-100 text-indigo-700">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
                         </div>
                         <div>
-                            <span class="font-bold text-slate-900 block">Konversi Presisi Dokumen Word</span>
-                            <p class="text-slate-600 text-[11px] sm:text-xs mt-0.5">
-                                Mengonversi dokumen format .docx atau .doc ke PDF dengan mempertahankan font, tabel, dan format asli.
+                            <span class="font-bold text-slate-900 block">Konversi Presisi Word (.docx / .doc)</span>
+                            <p class="text-slate-600 text-[11px] mt-0.5">
+                                Didukung engine Microsoft Word Native yang stabil untuk konversi berulang tanpa batas.
                             </p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Dropzone Uploader for Word -->
-                <div id="dropzoneWord" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 hover:bg-indigo-50/30 transition-all rounded-2xl p-6 sm:p-8 text-center cursor-pointer relative group">
-                    <input type="file" id="inputWordFile" accept=".docx,.doc" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                    
+                <div id="dropzoneWord"
+                    class="border-2 border-dashed border-slate-300 hover:border-indigo-500 hover:bg-indigo-50/20 transition-all rounded-2xl p-6 sm:p-8 text-center cursor-pointer relative group">
+                    <input type="file" id="inputWordFile" accept=".docx,.doc" multiple
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+
                     <div class="flex flex-col items-center justify-center pointer-events-none">
-                        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-3 group-hover:scale-105 transition-transform">
+                        <div
+                            class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-3 group-hover:scale-105 transition-transform">
                             <i data-lucide="file-type-2" class="w-7 h-7 sm:w-8 sm:h-8"></i>
                         </div>
                         <p class="font-bold text-sm sm:text-base text-slate-800">
-                            Sentuh untuk Memilih Berkas Word
+                            Seret & Lepas Berkas Word ke Sini
                         </p>
                         <p class="text-xs text-slate-500 mt-1">
-                            Mendukung berkas .docx dan .doc (Maks. 200 MB)
+                            Mendukung berkas .docx dan .doc (Maks. 20 berkas sekaligus)
                         </p>
-                        <div class="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
-                            <i data-lucide="check" class="w-3.5 h-3.5 text-blue-600"></i>
-                            <span>Siap diunduh sebagai format PDF standar</span>
+                        <div
+                            class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-indigo-600"></i>
+                            <span>Format, tata letak, dan font tetap presisi</span>
                         </div>
                     </div>
                 </div>
 
             </div>
 
-            <!-- Selected File Preview Card (Hidden by default) -->
-            <div id="filePreviewCard" class="hidden mt-5 p-3.5 sm:p-4 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl items-center justify-between gap-3 animate-fade-in">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div id="previewIconBox" class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
-                        <i id="previewIcon" data-lucide="file" class="w-5 h-5"></i>
+            <!-- Selected Files List & Queue (Hidden by default) -->
+            <div id="fileQueueSection" class="hidden mt-5 space-y-3">
+                <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-800">Daftar Berkas Siap Konversi:</span>
+                        <span id="queueCountBadge"
+                            class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800">0 / 20
+                            Berkas</span>
                     </div>
-                    <div class="min-w-0">
-                        <p id="previewFileName" class="text-xs sm:text-sm font-bold text-slate-900 truncate">nama_berkas.pdf</p>
-                        <div class="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
-                            <span id="previewFileSize">0 KB</span>
-                            <span>•</span>
-                            <span id="previewFileTypeBadge" class="uppercase font-semibold text-blue-600">PDF</span>
-                        </div>
-                    </div>
+                    <button id="btnClearAllQueue"
+                        class="text-slate-500 hover:text-rose-600 font-semibold text-[11px] flex items-center gap-1">
+                        <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                        <span>Kosongkan Daftar</span>
+                    </button>
                 </div>
 
-                <button id="btnRemoveFile" title="Hapus Berkas" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
+                <!-- Scrollable Files Container -->
+                <div id="fileQueueList" class="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                    <!-- Dynamic File Cards will be injected here -->
+                </div>
             </div>
 
             <!-- Convert Action Button -->
-            <div class="mt-6">
-                <button id="btnConvert" disabled class="w-full py-3.5 sm:py-4 px-6 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all flex items-center justify-center gap-2">
+            <div class="mt-5">
+                <button id="btnConvert" disabled
+                    class="w-full py-3.5 sm:py-4 px-6 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all flex items-center justify-center gap-2">
                     <i data-lucide="sparkles" class="w-5 h-5"></i>
-                    <span id="btnConvertText">Pilih Berkas Terlebih Dahulu</span>
+                    <span id="btnConvertText">Pilih atau Tarik Berkas ke Sini</span>
                 </button>
             </div>
 
-            <!-- Conversion Progress & Loading Indicator (Hidden by default) -->
-            <div id="progressContainer" class="hidden mt-6 p-4 sm:p-6 bg-blue-50/70 border border-blue-200/80 rounded-2xl space-y-4">
+            <!-- Conversion Progress & Batch Progress Tracker -->
+            <div id="progressContainer"
+                class="hidden mt-5 p-4 sm:p-5 bg-blue-50/70 border border-blue-200/80 rounded-2xl space-y-3">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full border-3 border-blue-600 border-t-transparent animate-spin flex items-center justify-center"></div>
+                        <div
+                            class="w-7 h-7 rounded-full border-3 border-blue-600 border-t-transparent animate-spin flex items-center justify-center">
+                        </div>
                         <div>
-                            <span id="progressStatusText" class="font-bold text-xs sm:text-sm text-slate-900 block">Sedang Memproses Dokumen...</span>
-                            <span id="progressSubText" class="text-[11px] text-slate-500 block">Mohon jangan menutup halaman ini.</span>
+                            <span id="progressStatusText"
+                                class="font-bold text-xs sm:text-sm text-slate-900 block">Mengonversi Berkas...</span>
+                            <span id="progressSubText" class="text-[11px] text-slate-500 block">Memproses dokumen satu
+                                per satu...</span>
                         </div>
                     </div>
-                    <span id="progressPercent" class="text-xs font-extrabold text-blue-600">35%</span>
+                    <span id="progressPercent" class="text-xs font-extrabold text-blue-600">0%</span>
                 </div>
 
                 <!-- Animated Progress Bar -->
                 <div class="w-full bg-blue-100 rounded-full h-2.5 overflow-hidden">
-                    <div id="progressBar" class="bg-gradient-to-r from-blue-600 to-indigo-600 h-2.5 rounded-full transition-all duration-300" style="width: 35%"></div>
-                </div>
-
-                <!-- Step Tracker -->
-                <div class="grid grid-cols-3 gap-2 pt-1 text-[10px] sm:text-xs font-semibold text-slate-600 text-center">
-                    <div id="stepUpload" class="flex flex-col items-center text-blue-600">
-                        <span>1. Unggah</span>
-                    </div>
-                    <div id="stepProcess" class="flex flex-col items-center text-slate-400">
-                        <span>2. Analisis & Konversi</span>
-                    </div>
-                    <div id="stepFinal" class="flex flex-col items-center text-slate-400">
-                        <span>3. Selesai</span>
-                    </div>
+                    <div id="progressBar"
+                        class="bg-gradient-to-r from-blue-600 to-indigo-600 h-2.5 rounded-full transition-all duration-200"
+                        style="width: 0%"></div>
                 </div>
             </div>
 
-            <!-- Result Card (Download Ready) -->
-            <div id="resultCard" class="hidden mt-6 p-4 sm:p-6 bg-emerald-50/80 border border-emerald-200 rounded-2xl space-y-4 animate-fade-in">
-                <div class="flex items-start gap-3.5">
-                    <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
-                        <i data-lucide="check-circle" class="w-6 h-6"></i>
+            <!-- Batch Results Section (Hidden by default) -->
+            <div id="resultSection" class="hidden mt-6 space-y-4">
+                <div class="p-4 sm:p-5 bg-emerald-50/80 border border-emerald-200 rounded-2xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div
+                                class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                                <i data-lucide="check" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs sm:text-sm font-extrabold text-slate-900">Konversi Selesai!</h4>
+                                <span id="resultSummaryText" class="text-[11px] text-emerald-700 font-medium">Seluruh
+                                    berkas berhasil dikonversi dengan nama asli.</span>
+                            </div>
+                        </div>
+
+                        <!-- Master ZIP Download Button -->
+                        <a id="btnDownloadZip" href="#"
+                            class="px-3.5 py-2 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5">
+                            <i data-lucide="archive" class="w-4 h-4"></i>
+                            <span>Unduh Semua (.ZIP)</span>
+                        </a>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 mb-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                            <span>Konversi Berhasil</span>
-                        </div>
-                        <h4 id="resultFileName" class="text-xs sm:text-sm font-extrabold text-slate-900 truncate">dokumen_hasil.docx</h4>
-                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-600 mt-1">
-                            <span id="resultFileSize">0 KB</span>
-                            <span>•</span>
-                            <span id="resultMethod" class="font-medium text-emerald-700 bg-white px-2 py-0.5 rounded-md border border-emerald-200">Metode: Ekstraksi Tata Letak</span>
-                        </div>
+
+                    <!-- Converted Items List -->
+                    <div id="resultItemsList"
+                        class="space-y-2 pt-2 border-t border-emerald-200/60 max-h-64 overflow-y-auto custom-scrollbar">
+                        <!-- Dynamic Result Cards will be rendered here -->
                     </div>
                 </div>
 
-                <!-- Action Download Button -->
-                <div class="pt-2 flex flex-col sm:flex-row gap-2.5">
-                    <a id="btnDownload" href="#" class="flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="download" class="w-4 h-4"></i>
-                        <span>Unduh Hasil Dokumen</span>
-                    </a>
-                    <button id="btnConvertAgain" class="py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5">
-                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-                        <span>Konversi Lain</span>
+                <div class="flex items-center justify-between gap-3 pt-1">
+                    <button id="btnConvertMore"
+                        class="py-2.5 px-4 rounded-xl font-bold text-xs text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-all flex items-center gap-1.5">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        <span>Konversi Berkas Lain</span>
                     </button>
+                    <p class="text-[11px] text-slate-500 text-right">
+                        💡 <em>Hasil konversi otomatis dihapus permanen saat halaman direfresh.</em>
+                    </p>
                 </div>
             </div>
 
             <!-- Error Notice Box -->
-            <div id="errorBox" class="hidden mt-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 text-rose-800 text-xs sm:text-sm">
-                <i data-lucide="alert-circle" class="w-5 h-5 text-rose-600 shrink-0 mt-0.5"></i>
+            <div id="errorBox"
+                class="hidden mt-5 p-3.5 sm:p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-rose-800 text-xs sm:text-sm">
+                <i data-lucide="alert-circle" class="w-4 h-4 text-rose-600 shrink-0 mt-0.5"></i>
                 <div class="flex-1">
-                    <span class="font-bold block">Gagal Memproses Dokumen</span>
-                    <p id="errorMessage" class="text-xs text-rose-700 mt-0.5">Terjadi kesalahan.</p>
+                    <span class="font-bold block text-xs">Pemberitahuan Sistem</span>
+                    <p id="errorMessage" class="text-xs text-rose-700 mt-0.5"></p>
                 </div>
-                <button id="btnCloseError" class="text-rose-400 hover:text-rose-700 p-1">
+                <button id="btnCloseError" class="text-rose-400 hover:text-rose-700 p-0.5">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -333,127 +359,83 @@
 
         <!-- Privacy & Features Banner -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-6">
-            <div class="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 flex items-center gap-3">
-                <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <i data-lucide="lock" class="w-4 h-4"></i>
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="file-check-2" class="w-4 h-4"></i>
                 </div>
                 <div>
-                    <h5 class="text-xs font-bold text-slate-800">100% Privat & Mandiri</h5>
-                    <p class="text-[11px] text-slate-500">Berkas diproses di mesin lokal sendiri.</p>
+                    <h5 class="text-xs font-bold text-slate-800">Nama File Asli Tetap Sama</h5>
+                    <p class="text-[11px] text-slate-500">Tanpa nomor/timestamp tambahan.</p>
                 </div>
             </div>
 
-            <div class="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 flex items-center gap-3">
-                <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                    <i data-lucide="infinity" class="w-4 h-4"></i>
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="files" class="w-4 h-4"></i>
                 </div>
                 <div>
-                    <h5 class="text-xs font-bold text-slate-800">Tanpa Batas Kuota</h5>
-                    <p class="text-[11px] text-slate-500">Konversi sepuasnya tanpa antrean.</p>
+                    <h5 class="text-xs font-bold text-slate-800">Batch Hingga 20 Berkas</h5>
+                    <p class="text-[11px] text-slate-500">Proses sekali jalan & unduh ZIP.</p>
                 </div>
             </div>
 
-            <div class="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 flex items-center gap-3">
-                <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </div>
                 <div>
-                    <h5 class="text-xs font-bold text-slate-800">Auto File Cleanup</h5>
-                    <p class="text-[11px] text-slate-500">Berkas sementara dihapus otomatis.</p>
+                    <h5 class="text-xs font-bold text-slate-800">Auto-Purge On Refresh</h5>
+                    <p class="text-[11px] text-slate-500">Penyimpanan disk otomatis bersih.</p>
                 </div>
             </div>
         </div>
 
     </main>
 
-    <!-- System Info & Help Modal -->
-    <div id="systemInfoModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white max-w-lg w-full rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
-            
+    <!-- System Info Modal -->
+    <div id="systemInfoModal"
+        class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div
+            class="bg-white max-w-lg w-full rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
                 <div class="flex items-center gap-2">
                     <i data-lucide="cpu" class="w-5 h-5 text-blue-600"></i>
-                    <h3 class="font-bold text-sm sm:text-base text-slate-900">Kesiapan Sistem & OCR Engine</h3>
+                    <h3 class="font-bold text-sm sm:text-base text-slate-900">Kesiapan Mesin Konversi</h3>
                 </div>
-                <button id="btnCloseModal" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200/60">
+                <button id="btnCloseModal" class="p-1 text-slate-400 hover:text-slate-700 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-
-            <div class="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs sm:text-sm">
-                <!-- Status List -->
+            <div class="p-4 sm:p-5 overflow-y-auto space-y-3 text-xs sm:text-sm">
                 <div class="space-y-2">
-                    <!-- pdf2docx -->
                     <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="file-text" class="w-4 h-4 text-blue-600"></i>
-                            <span class="font-semibold text-slate-700">PDF to Word (pdf2docx)</span>
-                        </div>
-                        <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">Aktif</span>
+                        <span class="font-semibold text-slate-700">PDF to Word (pdf2docx)</span>
+                        <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">Aktif &
+                            Siap</span>
                     </div>
-
-                    <!-- Tesseract OCR -->
                     <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="scan" class="w-4 h-4 text-indigo-600"></i>
-                            <div>
-                                <span class="font-semibold text-slate-700 block">Tesseract OCR (Scan Engine)</span>
-                                <span id="statusTesseractDesc" class="text-[10px] text-slate-500 block">Mengecek status...</span>
-                            </div>
-                        </div>
-                        <span id="badgeTesseract" class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-200 text-slate-700">Cek...</span>
+                        <span class="font-semibold text-slate-700">Word to PDF (MS Word COM)</span>
+                        <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">Aktif &
+                            Stabil</span>
                     </div>
-
-                    <!-- Poppler -->
                     <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="image" class="w-4 h-4 text-amber-600"></i>
-                            <div>
-                                <span class="font-semibold text-slate-700 block">Poppler (PDF Renderer)</span>
-                                <span id="statusPopplerDesc" class="text-[10px] text-slate-500 block">Mengecek status...</span>
-                            </div>
-                        </div>
-                        <span id="badgePoppler" class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-200 text-slate-700">Cek...</span>
+                        <span class="font-semibold text-slate-700">Pembersihan Memori Otomatis</span>
+                        <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">Aktif
+                            Saat Refresh</span>
                     </div>
-
-                    <!-- Word to PDF Engine -->
-                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="file-check" class="w-4 h-4 text-rose-600"></i>
-                            <div>
-                                <span class="font-semibold text-slate-700 block">Word to PDF Engine</span>
-                                <span id="statusWordDesc" class="text-[10px] text-slate-500 block">docx2pdf / LibreOffice</span>
-                            </div>
-                        </div>
-                        <span id="badgeWord" class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">Siap</span>
-                    </div>
-                </div>
-
-                <!-- Tips & Guide -->
-                <div class="p-3 bg-blue-50/70 border border-blue-200 rounded-xl space-y-1.5 text-xs text-slate-700">
-                    <p class="font-bold text-blue-900 flex items-center gap-1.5">
-                        <i data-lucide="info" class="w-4 h-4 text-blue-600"></i>
-                        <span>Catatan Penggunaan:</span>
-                    </p>
-                    <ul class="list-disc list-inside space-y-1 text-slate-600 text-[11px] sm:text-xs">
-                        <li>Untuk PDF standar berbasis teks, konversi langsung berjalan otomatis dengan layout dan tabel yang rapi.</li>
-                        <li>Untuk dokumen scan/foto, pastikan Tesseract-OCR dan Poppler sudah terpasang jika ingin menggunakan fitur OCR.</li>
-                        <li>Berkas sementara dihapus secara berkala dari penyimpanan server otomatis.</li>
-                    </ul>
                 </div>
             </div>
-
             <div class="p-4 border-t border-slate-200 bg-slate-50 text-right">
-                <button id="btnCloseModalBtn" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 transition-colors">
+                <button id="btnCloseModalBtn"
+                    class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 transition-colors">
                     Tutup
                 </button>
             </div>
-
         </div>
     </div>
 
     <!-- Footer -->
-    <footer class="mt-auto py-4 text-center border-t border-slate-200/80 bg-white">
+    <footer class="mt-auto py-3.5 text-center border-t border-slate-200/80 bg-white">
         <p class="text-xs text-slate-500">
             <strong>aipp-convert</strong> &copy; 2026 • Aplikasi Konversi Dokumen Mandiri & Privat
         </p>
@@ -461,10 +443,39 @@
 
     <!-- Client-side Logic (Vanilla JavaScript) -->
     <script>
-        // State Management
+        // =====================================================================
+        // SESSION & AUTO-CLEANUP ON REFRESH MANAGEMENT
+        // =====================================================================
+        const OLD_SESSION_KEY = 'aipp_active_session_id';
+        let oldSessionId = sessionStorage.getItem(OLD_SESSION_KEY);
+
+        // Jika ada sesi sebelumnya saat browser dimuat/refresh -> langsung bersihkan permanen di server!
+        if (oldSessionId) {
+            try {
+                const purgeData = new FormData();
+                purgeData.append('session_id', oldSessionId);
+                fetch('/api/cleanup-session', { method: 'POST', body: purgeData });
+            } catch (e) { }
+        }
+
+        // Buat ID sesi baru untuk halaman saat ini
+        const currentSessionId = 'sess_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        sessionStorage.setItem(OLD_SESSION_KEY, currentSessionId);
+
+        // Saat user refresh atau tutup tab, kirim sinyal beacon untuk hapus permanen
+        window.addEventListener('beforeunload', () => {
+            const beaconData = new FormData();
+            beaconData.append('session_id', currentSessionId);
+            navigator.sendBeacon('/api/cleanup-session', beaconData);
+        });
+
+        // =====================================================================
+        // STATE MANAGEMENT
+        // =====================================================================
         let currentMode = 'pdf-to-word'; // 'pdf-to-word' | 'word-to-pdf'
-        let selectedFile = null;
+        let queuedFiles = []; // Array of File objects (max 20)
         let isProcessing = false;
+        const MAX_FILES = 20;
 
         // DOM Elements
         const tabPdfToWord = document.getElementById('tabPdfToWord');
@@ -477,13 +488,10 @@
         const inputPdfFile = document.getElementById('inputPdfFile');
         const inputWordFile = document.getElementById('inputWordFile');
 
-        const filePreviewCard = document.getElementById('filePreviewCard');
-        const previewFileName = document.getElementById('previewFileName');
-        const previewFileSize = document.getElementById('previewFileSize');
-        const previewFileTypeBadge = document.getElementById('previewFileTypeBadge');
-        const previewIconBox = document.getElementById('previewIconBox');
-        const previewIcon = document.getElementById('previewIcon');
-        const btnRemoveFile = document.getElementById('btnRemoveFile');
+        const fileQueueSection = document.getElementById('fileQueueSection');
+        const fileQueueList = document.getElementById('fileQueueList');
+        const queueCountBadge = document.getElementById('queueCountBadge');
+        const btnClearAllQueue = document.getElementById('btnClearAllQueue');
 
         const checkForceOcr = document.getElementById('checkForceOcr');
         const selectOcrLang = document.getElementById('selectOcrLang');
@@ -496,82 +504,46 @@
         const progressPercent = document.getElementById('progressPercent');
         const progressStatusText = document.getElementById('progressStatusText');
         const progressSubText = document.getElementById('progressSubText');
-        const stepUpload = document.getElementById('stepUpload');
-        const stepProcess = document.getElementById('stepProcess');
-        const stepFinal = document.getElementById('stepFinal');
 
-        const resultCard = document.getElementById('resultCard');
-        const resultFileName = document.getElementById('resultFileName');
-        const resultFileSize = document.getElementById('resultFileSize');
-        const resultMethod = document.getElementById('resultMethod');
-        const btnDownload = document.getElementById('btnDownload');
-        const btnConvertAgain = document.getElementById('btnConvertAgain');
+        const resultSection = document.getElementById('resultSection');
+        const resultItemsList = document.getElementById('resultItemsList');
+        const resultSummaryText = document.getElementById('resultSummaryText');
+        const btnDownloadZip = document.getElementById('btnDownloadZip');
+        const btnConvertMore = document.getElementById('btnConvertMore');
 
         const errorBox = document.getElementById('errorBox');
         const errorMessage = document.getElementById('errorMessage');
         const btnCloseError = document.getElementById('btnCloseError');
 
-        // Modal Elements
+        const btnPurgeStorage = document.getElementById('btnPurgeStorage');
         const btnOpenSystemInfo = document.getElementById('btnOpenSystemInfo');
         const systemInfoModal = document.getElementById('systemInfoModal');
         const btnCloseModal = document.getElementById('btnCloseModal');
         const btnCloseModalBtn = document.getElementById('btnCloseModalBtn');
-        const badgeTesseract = document.getElementById('badgeTesseract');
-        const statusTesseractDesc = document.getElementById('statusTesseractDesc');
-        const badgePoppler = document.getElementById('badgePoppler');
-        const statusPopplerDesc = document.getElementById('statusPopplerDesc');
-        const badgeWord = document.getElementById('badgeWord');
-        const statusWordDesc = document.getElementById('statusWordDesc');
 
-        // Initialize Lucide Icons
-        lucide.createIcons();
+        // Prevent browser from opening files dragged outside dropzone
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => e.preventDefault());
 
-        // Check system status on page load
-        async function fetchSystemStatus() {
-            try {
-                const res = await fetch('/api/system-status');
-                const data = await res.json();
-                if (data.success && data.capabilities) {
-                    const c = data.capabilities;
-                    // Tesseract
-                    if (c.tesseract_installed) {
-                        badgeTesseract.className = "px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800";
-                        badgeTesseract.textContent = "Terdeteksi";
-                        statusTesseractDesc.textContent = `Versi: ${c.tesseract_version || 'Aktif'}`;
-                    } else {
-                        badgeTesseract.className = "px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800";
-                        badgeTesseract.textContent = "Belum Terdeteksi";
-                        statusTesseractDesc.textContent = "Scan OCR memerlukan instalasi Tesseract";
-                    }
-
-                    // Poppler
-                    if (c.poppler_installed) {
-                        badgePoppler.className = "px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800";
-                        badgePoppler.textContent = "Terdeteksi";
-                        statusPopplerDesc.textContent = "Jalur render PDF siap";
-                    } else {
-                        badgePoppler.className = "px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800";
-                        badgePoppler.textContent = "Belum Terdeteksi";
-                        statusPopplerDesc.textContent = "Perlu diinstal untuk konversi halaman scan";
-                    }
-
-                    // Word Converter
-                    statusWordDesc.textContent = c.word_converter;
-                }
-            } catch (err) {
-                console.warn("Gagal mengecek status sistem:", err);
-            }
+        // Format Byte size
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
-        fetchSystemStatus();
 
-        // Tab Switching Logic
+        // =====================================================================
+        // TAB SWITCHING
+        // =====================================================================
         tabPdfToWord.addEventListener('click', () => switchTab('pdf-to-word'));
         tabWordToPdf.addEventListener('click', () => switchTab('word-to-pdf'));
 
         function switchTab(mode) {
             if (isProcessing) return;
             currentMode = mode;
-            clearFile();
+            clearQueue();
             hideError();
             hideResult();
 
@@ -589,250 +561,311 @@
             updateConvertButton();
         }
 
-        // File Selection Handlers
-        inputPdfFile.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFileSelected(e.target.files[0], 'pdf');
-            }
-        });
-
-        inputWordFile.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFileSelected(e.target.files[0], 'word');
-            }
-        });
-
-        // Drag and Drop Effects
-        [dropzonePdf, dropzoneWord].forEach(zone => {
-            ['dragenter', 'dragover'].forEach(eventName => {
-                zone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    zone.classList.add('drag-active');
-                }, false);
+        // =====================================================================
+        // DRAG & DROP AND FILE SELECTION HANDLERS
+        // =====================================================================
+        function setupDropzone(zone, inputEl, expectedType) {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.add('drag-active');
             });
 
-            ['dragleave', 'drop'].forEach(eventName => {
-                zone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    zone.classList.remove('drag-active');
-                }, false);
+            zone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove('drag-active');
             });
-        });
 
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove('drag-active');
+                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    addFilesToQueue(Array.from(e.dataTransfer.files), expectedType);
+                }
+            });
+
+            inputEl.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    addFilesToQueue(Array.from(e.target.files), expectedType);
+                }
+            });
         }
 
-        function handleFileSelected(file, expectedType) {
+        setupDropzone(dropzonePdf, inputPdfFile, 'pdf');
+        setupDropzone(dropzoneWord, inputWordFile, 'word');
+
+        function addFilesToQueue(files, expectedType) {
             hideError();
             hideResult();
 
-            const ext = file.name.split('.').pop().toLowerCase();
-            if (expectedType === 'pdf' && ext !== 'pdf') {
-                showError("Format berkas salah. Harap unggah berkas berekstensi .pdf.");
-                return;
+            let addedCount = 0;
+            let invalidFormatCount = 0;
+
+            for (const file of files) {
+                if (queuedFiles.length >= MAX_FILES) {
+                    showError(`Maksimal ${MAX_FILES} berkas sekaligus telah tercapai.`);
+                    break;
+                }
+
+                const ext = file.name.split('.').pop().toLowerCase();
+                const isValid = (expectedType === 'pdf' && ext === 'pdf') ||
+                    (expectedType === 'word' && ['docx', 'doc'].includes(ext));
+
+                if (!isValid) {
+                    invalidFormatCount++;
+                    continue;
+                }
+
+                // Cek duplikasi di antrean
+                const isDuplicate = queuedFiles.some(f => f.name === file.name && f.size === file.size);
+                if (!isDuplicate) {
+                    queuedFiles.push(file);
+                    addedCount++;
+                }
             }
-            if (expectedType === 'word' && !['docx', 'doc'].includes(ext)) {
-                showError("Format berkas salah. Harap unggah berkas .docx atau .doc.");
-                return;
+
+            if (invalidFormatCount > 0) {
+                showError(`${invalidFormatCount} berkas diabaikan karena format tidak sesuai (${expectedType.toUpperCase()}).`);
             }
 
-            selectedFile = file;
-
-            // Update Preview Card
-            previewFileName.textContent = file.name;
-            previewFileSize.textContent = formatBytes(file.size);
-            previewFileTypeBadge.textContent = ext.toUpperCase();
-
-            if (ext === 'pdf') {
-                previewIconBox.className = "w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0";
-            } else {
-                previewIconBox.className = "w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0";
-            }
-
-            filePreviewCard.classList.remove('hidden');
-            filePreviewCard.classList.add('flex');
-
+            renderQueueList();
             updateConvertButton();
         }
 
-        btnRemoveFile.addEventListener('click', clearFile);
+        function removeFileFromQueue(index) {
+            if (isProcessing) return;
+            queuedFiles.splice(index, 1);
+            renderQueueList();
+            updateConvertButton();
+        }
 
-        function clearFile() {
-            selectedFile = null;
+        btnClearAllQueue.addEventListener('click', clearQueue);
+
+        function clearQueue() {
+            if (isProcessing) return;
+            queuedFiles = [];
             inputPdfFile.value = '';
             inputWordFile.value = '';
-            filePreviewCard.classList.add('hidden');
-            filePreviewCard.classList.remove('flex');
+            renderQueueList();
             updateConvertButton();
+        }
+
+        function renderQueueList() {
+            if (queuedFiles.length === 0) {
+                fileQueueSection.classList.add('hidden');
+                fileQueueList.innerHTML = '';
+                return;
+            }
+
+            fileQueueSection.classList.remove('hidden');
+            queueCountBadge.textContent = `${queuedFiles.length} / ${MAX_FILES} Berkas`;
+
+            fileQueueList.innerHTML = queuedFiles.map((file, idx) => {
+                const ext = file.name.split('.').pop().toUpperCase();
+                const isPdf = ext === 'PDF';
+                return `
+                    <div id="queueItem_${idx}" class="p-2.5 sm:p-3 bg-slate-50 border border-slate-200/90 rounded-xl flex items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="w-8 h-8 rounded-lg ${isPdf ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'} flex items-center justify-center shrink-0">
+                                <i data-lucide="${isPdf ? 'file' : 'file-type-2'}" class="w-4 h-4"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="font-bold text-slate-800 truncate text-[11px] sm:text-xs">${escapeHtml(file.name)}</p>
+                                <span class="text-[10px] text-slate-500">${formatBytes(file.size)} • ${ext}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span id="queueStatus_${idx}" class="text-[10px] font-semibold text-slate-400 px-2 py-0.5 rounded bg-slate-200/70">Siap</span>
+                            <button onclick="removeFileFromQueue(${idx})" class="p-1 text-slate-400 hover:text-rose-600 rounded">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
         }
 
         function updateConvertButton() {
-            if (selectedFile) {
+            if (queuedFiles.length > 0) {
                 btnConvert.disabled = false;
-                if (currentMode === 'pdf-to-word') {
-                    btnConvertText.textContent = "Konversi PDF ke Word Sekarang";
-                } else {
-                    btnConvertText.textContent = "Konversi Word ke PDF Sekarang";
-                }
+                const targetFmt = currentMode === 'pdf-to-word' ? 'Word (.docx)' : 'PDF (.pdf)';
+                btnConvertText.textContent = `Konversi ${queuedFiles.length} Berkas ke ${targetFmt}`;
             } else {
                 btnConvert.disabled = true;
-                btnConvertText.textContent = "Pilih Berkas Terlebih Dahulu";
+                btnConvertText.textContent = "Pilih atau Tarik Berkas ke Sini";
             }
         }
 
-        // Conversion Flow
+        function escapeHtml(text) {
+            return text.replace(/[&<>"']/g, function (m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        // =====================================================================
+        // BATCH CONVERSION PROCESSOR
+        // =====================================================================
         btnConvert.addEventListener('click', async () => {
-            if (!selectedFile || isProcessing) return;
+            if (queuedFiles.length === 0 || isProcessing) return;
 
             isProcessing = true;
             btnConvert.disabled = true;
             hideError();
             hideResult();
 
-            // Tampilkan progress
             progressContainer.classList.remove('hidden');
-            updateProgress(20, "Mengunggah Berkas ke Server...", "Memulai transmisi data berkas...");
-            setStepState('upload');
+            const total = queuedFiles.length;
+            let successCount = 0;
+            const convertedResults = [];
 
-            const formData = new FormData();
-            formData.append('file', selectedFile);
+            const endpoint = currentMode === 'pdf-to-word'
+                ? '/api/convert/pdf-to-word'
+                : '/api/convert/word-to-pdf';
 
-            let endpoint = '';
-            if (currentMode === 'pdf-to-word') {
-                endpoint = '/api/convert/pdf-to-word';
-                formData.append('force_ocr', checkForceOcr.checked ? 'true' : 'false');
-                formData.append('ocr_lang', selectOcrLang.value);
-            } else {
-                endpoint = '/api/convert/word-to-pdf';
-            }
+            for (let i = 0; i < total; i++) {
+                const file = queuedFiles[i];
+                const statusEl = document.getElementById(`queueStatus_${i}`);
 
-            // Simulate progress animation for good UX
-            let simulatedPercent = 25;
-            const progressTimer = setInterval(() => {
-                if (simulatedPercent < 85) {
-                    simulatedPercent += Math.floor(Math.random() * 8) + 3;
-                    if (simulatedPercent > 45 && simulatedPercent <= 70) {
-                        setStepState('process');
-                        if (currentMode === 'pdf-to-word') {
-                            if (checkForceOcr.checked) {
-                                updateProgress(simulatedPercent, "Menjalankan OCR Tesseract...", "Mengekstrak karakter dari tiap halaman pindaian...");
-                            } else {
-                                updateProgress(simulatedPercent, "Menganalisis Lapisan Dokumen...", "Mengecek teks dan menyusun tata letak Word...");
-                            }
-                        } else {
-                            updateProgress(simulatedPercent, "Mengompilasi Word ke PDF...", "Membangun berkas PDF terstandarisasi...");
+                // Update UI status item
+                if (statusEl) {
+                    statusEl.className = "text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded animate-pulse";
+                    statusEl.textContent = "Memproses...";
+                }
+
+                // Update Overall Progress Bar
+                const currentPercent = Math.round((i / total) * 100);
+                progressBar.style.width = `${currentPercent}%`;
+                progressPercent.textContent = `${currentPercent}%`;
+                progressStatusText.textContent = `Mengonversi berkas ${i + 1} dari ${total}...`;
+                progressSubText.textContent = file.name;
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('session_id', currentSessionId);
+
+                if (currentMode === 'pdf-to-word') {
+                    formData.append('force_ocr', checkForceOcr.checked ? 'true' : 'false');
+                    formData.append('ocr_lang', selectOcrLang.value);
+                }
+
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await res.json();
+
+                    if (res.ok && data.success) {
+                        successCount++;
+                        convertedResults.push(data);
+                        if (statusEl) {
+                            statusEl.className = "text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded";
+                            statusEl.textContent = "Selesai";
                         }
-                    } else if (simulatedPercent > 70) {
-                        updateProgress(simulatedPercent, "Menyelesaikan Dokumen...", "Menyimpan dan mengemas berkas hasil...");
                     } else {
-                        updateProgress(simulatedPercent, "Memproses Dokumen...", "Sedang membaca struktur berkas...");
+                        throw new Error(data.message || 'Gagal konversi');
+                    }
+                } catch (err) {
+                    console.error("Error file:", file.name, err);
+                    if (statusEl) {
+                        statusEl.className = "text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded";
+                        statusEl.textContent = "Gagal";
                     }
                 }
-            }, 600);
-
-            try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                clearInterval(progressTimer);
-
-                const data = await response.json();
-
-                if (!response.ok || !data.success) {
-                    throw new Error(data.message || 'Gagal melakukan konversi.');
-                }
-
-                // Selesai
-                updateProgress(100, "Konversi Berhasil Selesai!", "Dokumen siap diunduh.");
-                setStepState('final');
-
-                setTimeout(() => {
-                    progressContainer.classList.add('hidden');
-                    showResult(data);
-                    isProcessing = false;
-                    updateConvertButton();
-                }, 600);
-
-            } catch (err) {
-                clearInterval(progressTimer);
-                progressContainer.classList.add('hidden');
-                showError(err.message || 'Terjadi gangguan jaringan atau kesalahan pada server.');
-                isProcessing = false;
-                updateConvertButton();
             }
+
+            // Selesai seluruh antrean
+            progressBar.style.width = '100%';
+            progressPercent.textContent = '100%';
+            progressStatusText.textContent = 'Semua berkas selesai diproses!';
+            progressSubText.textContent = `${successCount} dari ${total} berkas berhasil dikonversi.`;
+
+            setTimeout(() => {
+                progressContainer.classList.add('hidden');
+                isProcessing = false;
+                showBatchResults(convertedResults, total);
+            }, 600);
         });
 
-        function updateProgress(percent, statusText, subText) {
-            progressBar.style.width = `${percent}%`;
-            progressPercent.textContent = `${percent}%`;
-            if (statusText) progressStatusText.textContent = statusText;
-            if (subText) progressSubText.textContent = subText;
-        }
-
-        function setStepState(activeStep) {
-            stepUpload.className = "flex flex-col items-center text-slate-400";
-            stepProcess.className = "flex flex-col items-center text-slate-400";
-            stepFinal.className = "flex flex-col items-center text-slate-400";
-
-            if (activeStep === 'upload') {
-                stepUpload.className = "flex flex-col items-center text-blue-600 font-bold";
-            } else if (activeStep === 'process') {
-                stepUpload.className = "flex flex-col items-center text-emerald-600";
-                stepProcess.className = "flex flex-col items-center text-blue-600 font-bold";
-            } else if (activeStep === 'final') {
-                stepUpload.className = "flex flex-col items-center text-emerald-600";
-                stepProcess.className = "flex flex-col items-center text-emerald-600";
-                stepFinal.className = "flex flex-col items-center text-blue-600 font-bold";
+        // =====================================================================
+        // RESULT RENDERING & ZIP DOWNLOAD
+        // =====================================================================
+        function showBatchResults(results, totalQueued) {
+            if (results.length === 0) {
+                showError("Tidak ada berkas yang berhasil dikonversi. Silakan cek format dokumen Anda.");
+                updateConvertButton();
+                return;
             }
-        }
 
-        function showResult(data) {
-            resultFileName.textContent = data.filename || 'dokumen_hasil';
-            resultFileSize.textContent = data.file_size || '';
-            resultMethod.textContent = `Metode: ${data.method_used || 'Konversi Standar'}`;
-            btnDownload.href = data.download_url;
-            btnDownload.setAttribute('download', data.filename || 'dokumen_hasil');
+            resultSummaryText.textContent = `${results.length} dari ${totalQueued} berkas berhasil dikonversi dengan nama asli.`;
+            btnDownloadZip.href = `/api/download-zip/${currentSessionId}`;
 
-            resultCard.classList.remove('hidden');
-            resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            resultItemsList.innerHTML = results.map(item => `
+                <div class="p-2.5 bg-white border border-emerald-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+                        <div class="min-w-0">
+                            <span class="font-bold text-slate-800 block truncate text-[11px] sm:text-xs">${escapeHtml(item.filename)}</span>
+                            <span class="text-[10px] text-slate-500">${item.file_size} • ${item.method_used}</span>
+                        </div>
+                    </div>
+                    <a href="${item.download_url}" download="${escapeHtml(item.filename)}" class="px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 flex items-center gap-1 shrink-0">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>Unduh</span>
+                    </a>
+                </div>
+            `).join('');
+
+            resultSection.classList.remove('hidden');
+            resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            lucide.createIcons();
         }
 
         function hideResult() {
-            resultCard.classList.add('hidden');
+            resultSection.classList.add('hidden');
         }
 
-        btnConvertAgain.addEventListener('click', () => {
+        btnConvertMore.addEventListener('click', () => {
+            clearQueue();
             hideResult();
-            clearFile();
         });
 
+        // =====================================================================
+        // PURGE LOCAL MEMORY ON DEMAND
+        // =====================================================================
+        btnPurgeStorage.addEventListener('click', async () => {
+            if (confirm("Kosongkan seluruh berkas hasil konversi sementara di memori server sekarang?")) {
+                try {
+                    const res = await fetch('/api/cleanup-all', { method: 'POST' });
+                    const data = await res.json();
+                    alert(data.message || 'Penyimpanan berhasil dibersihkan.');
+                    clearQueue();
+                    hideResult();
+                } catch (e) {
+                    alert('Gagal membersihkan penyimpanan.');
+                }
+            }
+        });
+
+        // Error Handlers
         function showError(msg) {
             errorMessage.textContent = msg;
             errorBox.classList.remove('hidden');
             errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
-
         function hideError() {
             errorBox.classList.add('hidden');
         }
-
         btnCloseError.addEventListener('click', hideError);
 
-        // System Info Modal Handlers
-        btnOpenSystemInfo.addEventListener('click', () => {
-            systemInfoModal.classList.remove('hidden');
-            fetchSystemStatus();
-        });
-
+        // System Info Modal
+        btnOpenSystemInfo.addEventListener('click', () => systemInfoModal.classList.remove('hidden'));
         const closeModal = () => systemInfoModal.classList.add('hidden');
         btnCloseModal.addEventListener('click', closeModal);
         btnCloseModalBtn.addEventListener('click', closeModal);
@@ -840,12 +873,11 @@
             if (e.target === systemInfoModal) closeModal();
         });
 
-        // Call Lucide on initial render
+        // Initialize Lucide Icons on load
         document.addEventListener('DOMContentLoaded', () => {
-            if (window.lucide) {
-                lucide.createIcons();
-            }
+            if (window.lucide) lucide.createIcons();
         });
     </script>
 </body>
+
 </html>
