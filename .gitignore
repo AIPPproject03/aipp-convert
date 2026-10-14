@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*$py.class
+storage/uploads/*
+storage/converted/*
+!storage/uploads/.gitkeep
+!storage/converted/.gitkeep
+.env
+.venv/
+env/
+venv/
+.idea/
+.vscode/
