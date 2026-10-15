@@ -424,6 +424,24 @@
                             Saat Refresh</span>
                     </div>
                 </div>
+                <div class="space-y-2 pt-2 border-t border-slate-200">
+                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="font-semibold text-slate-700">Tesseract OCR</span>
+                            <span id="tesseractStatus"
+                                class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-200 text-slate-700">Memeriksa...</span>
+                        </div>
+                        <p id="tesseractDetails" class="mt-1 text-[10px] text-slate-500 break-all">Memeriksa instalasi...</p>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="font-semibold text-slate-700">Poppler</span>
+                            <span id="popplerStatus"
+                                class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-200 text-slate-700">Memeriksa...</span>
+                        </div>
+                        <p id="popplerDetails" class="mt-1 text-[10px] text-slate-500 break-all">Memeriksa instalasi...</p>
+                    </div>
+                </div>
             </div>
             <div class="p-4 border-t border-slate-200 bg-slate-50 text-right">
                 <button id="btnCloseModalBtn"
@@ -901,7 +919,52 @@
         btnCloseError.addEventListener('click', hideError);
 
         // System Info Modal
-        btnOpenSystemInfo.addEventListener('click', () => systemInfoModal.classList.remove('hidden'));
+        function setDependencyStatus(statusId, detailsId, installed, version, path) {
+            const badge = document.getElementById(statusId);
+            const details = document.getElementById(detailsId);
+            if (!badge || !details) return;
+            badge.className = installed
+                ? 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800'
+                : 'px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800';
+            badge.textContent = installed ? `Terpasang${version ? ` • v${version}` : ''}` : 'Belum ditemukan';
+            details.textContent = installed
+                ? `Lokasi: ${path || 'PATH sistem'}`
+                : 'Tidak ditemukan di lokasi konfigurasi atau PATH sistem.';
+        }
+
+        async function refreshSystemInfo() {
+            const tessStatus = document.getElementById('tesseractStatus');
+            const popplerStatus = document.getElementById('popplerStatus');
+            if (tessStatus) tessStatus.textContent = 'Memeriksa...';
+            if (popplerStatus) popplerStatus.textContent = 'Memeriksa...';
+            try {
+                const response = await fetch('/api/system-status', { cache: 'no-store' });
+                if (!response.ok) throw new Error('Status sistem tidak dapat dibaca.');
+                const result = await response.json();
+                const capabilities = result.capabilities || {};
+                setDependencyStatus('tesseractStatus', 'tesseractDetails',
+                    Boolean(capabilities.tesseract_installed), capabilities.tesseract_version, capabilities.tesseract_path);
+                setDependencyStatus('popplerStatus', 'popplerDetails',
+                    Boolean(capabilities.poppler_installed), null, capabilities.poppler_path);
+            } catch (error) {
+                for (const id of ['tesseractStatus', 'popplerStatus']) {
+                    const badge = document.getElementById(id);
+                    if (badge) {
+                        badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800';
+                        badge.textContent = 'Status tidak tersedia';
+                    }
+                }
+                for (const id of ['tesseractDetails', 'popplerDetails']) {
+                    const details = document.getElementById(id);
+                    if (details) details.textContent = 'Gagal menghubungi pemeriksa sistem.';
+                }
+            }
+        }
+
+        btnOpenSystemInfo.addEventListener('click', () => {
+            systemInfoModal.classList.remove('hidden');
+            refreshSystemInfo();
+        });
         const closeModal = () => systemInfoModal.classList.add('hidden');
         btnCloseModal.addEventListener('click', closeModal);
         btnCloseModalBtn.addEventListener('click', closeModal);

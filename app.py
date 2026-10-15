@@ -68,6 +68,7 @@ def configure_ocr_and_poppler():
             pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
         else:
             common_tesseract_paths = [
+                r"E:\etc\tesseract.exe",
                 r"C:\Program Files\Tesseract-OCR\tesseract.exe",
                 r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
                 os.path.expandvars(r"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe")
@@ -80,6 +81,7 @@ def configure_ocr_and_poppler():
         # Cek Poppler default jika belum didefinisikan
         if not poppler_path:
             common_poppler_paths = [
+                r"E:\etc\poppler-26.09.0\Library\bin",
                 r"C:\poppler\Library\bin",
                 r"C:\Program Files\poppler\Library\bin",
                 r"C:\Program Files\poppler\bin",
@@ -113,18 +115,26 @@ def check_system_capabilities():
         tess_version = pytesseract.get_tesseract_version()
         status['tesseract_installed'] = True
         status['tesseract_version'] = str(tess_version)
-        status['tesseract_path'] = pytesseract.pytesseract.tesseract_cmd
+        tess_command = pytesseract.pytesseract.tesseract_cmd
+        status['tesseract_path'] = (tess_command if os.path.isfile(tess_command)
+                                    else shutil.which(tess_command) or tess_command)
     except Exception:
         status['tesseract_installed'] = False
 
     # Cek Poppler
     try:
-        if POPPLER_PATH and os.path.exists(POPPLER_PATH):
+        exe_suffix = '.exe' if sys.platform.startswith('win') else ''
+        poppler_bin = os.path.join(POPPLER_PATH, 'pdftoppm' + exe_suffix) if POPPLER_PATH else None
+        pdfinfo_bin = os.path.join(POPPLER_PATH, 'pdfinfo' + exe_suffix) if POPPLER_PATH else None
+        if poppler_bin and pdfinfo_bin and os.path.isfile(poppler_bin) and os.path.isfile(pdfinfo_bin):
             status['poppler_installed'] = True
+            status['poppler_path'] = POPPLER_PATH
         else:
-            # Uji apakah pdftoppm ada di PATH
-            which_res = shutil.which('pdftoppm')
-            if which_res:
+            # Both tools are needed by pdf2image: pdfinfo for inspection and
+            # pdftoppm for rendering pages.
+            which_res = shutil.which('pdftoppm' + exe_suffix)
+            info_res = shutil.which('pdfinfo' + exe_suffix)
+            if which_res and info_res:
                 status['poppler_installed'] = True
                 status['poppler_path'] = os.path.dirname(which_res)
     except Exception:
